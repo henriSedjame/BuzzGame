@@ -1,14 +1,17 @@
 package io.gitlab.hsedjame.buzz.services;
 
-import io.gitlab.hsedjame.buzz.services.dto.Requests;
-import io.gitlab.hsedjame.buzz.services.dto.Responses;
+import io.gitlab.hsedjame.buzz.data.dto.Requests;
+import io.gitlab.hsedjame.buzz.data.dto.Responses;
+import reactor.core.publisher.Mono;
 
 public interface BuzzService {
 
-    Responses.PlayerAdded addPlayer(Requests.AddPlayer request);
+    Mono<Responses.GameStarted> startGame();
 
-    void buzz(Requests.Buzz request);
+    Mono<Responses.PlayerAdded> addPlayer(Requests.AddPlayer request);
 
-    void answer(Requests.Answer request);
+    Mono<Responses.BuzzRegistered> addBuzz(Requests.Buzz request);
+
+    Mono<Responses.AnswerRegistered> addAnswer(Requests.Answer request);
 
 }

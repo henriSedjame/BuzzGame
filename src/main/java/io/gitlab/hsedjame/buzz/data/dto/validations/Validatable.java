@@ -1,4 +1,4 @@
-package io.gitlab.hsedjame.buzz.services.dto.validations;
+package io.gitlab.hsedjame.buzz.data.dto.validations;
 
 import java.util.Map;
 import java.util.function.Predicate;
