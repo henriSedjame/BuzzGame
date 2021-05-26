@@ -1,5 +1,7 @@
 package io.gitlab.hsedjame.buzz.infrastructure;
 
+import reactor.core.publisher.Mono;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -7,7 +9,8 @@ public record GameState(
       AtomicBoolean started,
       int maxPlayers,
       int minPlayers,
-      AtomicInteger numberOfPlayers
+      AtomicInteger numberOfPlayers,
+      AtomicBoolean buzzed
 ) {
 
     public void start(){
@@ -27,4 +30,17 @@ public record GameState(
         return numberOfPlayers.get() >= minPlayers;
     }
 
+    public Mono<Boolean> addBuzz(){
+        if (!buzzed.get()){
+            buzzed.set(true);
+            return Mono.just(true);
+        }
+
+        return Mono.just(false);
+    }
+
+    public Mono<Boolean> releaseBuzz(){
+        buzzed.set(false);
+        return Mono.just(true);
+    }
 }

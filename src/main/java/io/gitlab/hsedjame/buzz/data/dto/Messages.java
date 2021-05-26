@@ -13,10 +13,5 @@ public class Messages {
     }
     public static record PlayerAnswer(String playerName, Answer answer){}
     public static record Buzz(String author, LocalDateTime time){}
-    public static record PlayerScore(String playerName, int score, AfterScoreActions action){}
-
-    public enum AfterScoreActions{
-        NONE,
-        NEXT_QUESTION
-    }
+    public static record PlayerScore(String playerName, int score, String goodAnswer){}
 }

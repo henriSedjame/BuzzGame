@@ -12,9 +12,7 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +48,7 @@ public class BuzzApplication {
         return new Emitters(
                 Sinks.one(),
                 Sinks.one(),
+                Sinks.many().multicast().directAllOrNothing(),
                 Sinks.many().replay().all(),
                 Sinks.many().replay().all(),
                 Sinks.many().multicast().directAllOrNothing(),
@@ -65,7 +64,8 @@ public class BuzzApplication {
                 new AtomicBoolean(false),
                 6,
                 3,
-                new AtomicInteger(0)
+                new AtomicInteger(0),
+                new AtomicBoolean(false)
         );
     }
 
@@ -75,6 +75,24 @@ public class BuzzApplication {
     }
 
     private List<Messages.Question> getQuestons() {
-        return List.of();
+
+        return List.of(
+
+                new Messages.Question(0, "Lequel de ces noms ne correspond pas à un langage informatique ?", 1, new TreeSet<>(
+                        List.of(
+                                new Messages.Answer(0, "Elm", false),
+                                new Messages.Answer(1, "Rust", false),
+                                new Messages.Answer(2, "Dark", true)
+                        )
+                )),
+
+                new Messages.Question(1, "Dans le langage RUST quel mot clé est utilisé pour désigné une fonction ?", 1, new TreeSet<>(
+                        List.of(
+                                new Messages.Answer(0, "fun", false),
+                                new Messages.Answer(1, "fn", true),
+                                new Messages.Answer(2, "func", false)
+                        )
+                ))
+        );
     }
 }

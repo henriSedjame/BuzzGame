@@ -12,8 +12,9 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 public record Emitters(
-        Sinks.One<Boolean> gameCanStart,
-        Sinks.One<Boolean> gameCanEnd,
+        Sinks.One<Boolean> startGame,
+        Sinks.One<Boolean> endGame,
+        Sinks.Many<Boolean> canBuzz,
         Sinks.Many<Messages.PlayerScore> playerScores,
         Sinks.Many<Messages.Question> questions,
         Sinks.Many<Messages.Buzz> buzzes,
@@ -22,33 +23,41 @@ public record Emitters(
         Iterator<Messages.Question> questionsIterator
 ) {
 
-    public void enableStartingGame(){
+    public void gameStart() {
 
-        gameCanStart.emitValue(Boolean.TRUE, ((signalType, emitResult) -> {
+        startGame.emitValue(Boolean.TRUE, ((signalType, emitResult) -> {
 
-            var retry = switch (emitResult){
+            var retry = switch (emitResult) {
 
-                case OK, FAIL_TERMINATED, FAIL_OVERFLOW , FAIL_CANCELLED, FAIL_NON_SERIALIZED-> { yield false; }
+                case OK, FAIL_TERMINATED, FAIL_OVERFLOW, FAIL_CANCELLED, FAIL_NON_SERIALIZED -> {
+                    yield false;
+                }
 
-                case FAIL_ZERO_SUBSCRIBER -> { yield true; }
+                case FAIL_ZERO_SUBSCRIBER -> {
+                    yield true;
+                }
             };
 
             return signalType.equals(SignalType.SUBSCRIBE) && retry;
         }));
+
+        enableBuzz();
+        nextQuestion();
     }
 
-    public void emitScore(String player, int score, Messages.AfterScoreActions action) {
-        playerScores.tryEmitNext(new Messages.PlayerScore(player, score, action));
+    public void emitScore(Player player, String goodAnswer) {
+        playerScores.tryEmitNext(new Messages.PlayerScore(player.name(), player.score(), goodAnswer));
     }
 
-    public void nextQuestion(){
-        if(questionsIterator.hasNext())
+    public void nextQuestion() {
+        if (questionsIterator.hasNext())
             questions.tryEmitNext(questionsIterator().next());
 
-        gameCanEnd.tryEmitValue(Boolean.TRUE);
+        endGame.tryEmitValue(Boolean.TRUE);
     }
 
-    public void registerBuzz(Requests.Buzz buzzz){
+    public void registerBuzz(Requests.Buzz buzzz) {
+        disableBuzz();
         buzzes.tryEmitNext(new Messages.Buzz(buzzz.playerName(), LocalDateTime.now()));
     }
 
@@ -59,30 +68,32 @@ public record Emitters(
                 .findFirst()
                 .ifPresent(q -> {
                     boolean b = q.answers().stream().anyMatch(a -> a.good() && a.number() == answer.answerNumber());
-                    if (b) {
-                        updatePlayerScore.apply(player, q.points())
-                            .doOnNext(p -> {
-                                emitScore(p.name(), p.score(), Messages.AfterScoreActions.NEXT_QUESTION);
+                    if (b) updatePlayerScore
+                            .apply(player, q.points())
+                            .doOnNext(p -> emitScore(p, null));
 
-                                Timer timer = new Timer();
+                    else emitScore(player, q.answers().stream().filter(Messages.Answer::good).map(Messages.Answer::label).findFirst().get());
 
-                                timer.schedule(new TimerTask() {
-                                    @Override
-                                    public void run() {
-                                        nextQuestion();
-                                        timer.cancel();
-                                    }
-                                }, 2000);
-                            });
+                    enableBuzz();
 
+                    Timer timer = new Timer();
 
-                    } else {
-                        emitScore(answer.playerName(), 0, Messages.AfterScoreActions.NONE);
-                    }
-
-
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            nextQuestion();
+                            timer.cancel();
+                        }
+                    }, 1000);
                 });
 
     }
 
+    public void disableBuzz() {
+        canBuzz.tryEmitNext(false);
+    }
+
+    public void enableBuzz() {
+        canBuzz.tryEmitNext(true);
+    }
 }

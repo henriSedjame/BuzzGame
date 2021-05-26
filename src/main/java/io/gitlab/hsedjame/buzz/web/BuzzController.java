@@ -35,11 +35,17 @@ public record BuzzController(Emitters emitters) {
 
     @GetMapping("/start")
     public Mono<Boolean> start(){
-        return emitters.gameCanStart().asMono();
+        return emitters.startGame().asMono();
     }
 
     @GetMapping("/end")
     public Mono<Boolean> end(){
-        return emitters.gameCanEnd().asMono();
+        return emitters.endGame().asMono();
     }
+
+    @GetMapping("/can-buzz")
+    public Flux<Boolean> canBuzz(){
+        return emitters.canBuzz().asFlux();
+    }
+
 }

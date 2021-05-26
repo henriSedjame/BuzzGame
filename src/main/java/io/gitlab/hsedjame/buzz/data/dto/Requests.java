@@ -1,5 +1,6 @@
 package io.gitlab.hsedjame.buzz.data.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.logging.log4j.util.Strings;
 
 import java.util.Map;
@@ -9,8 +10,10 @@ import io.gitlab.hsedjame.buzz.data.dto.validations.Validatable;
 
 public sealed interface Requests<T extends Validatable<T>> extends Validatable<T> {
 
-    record AddPlayer(String name) implements Requests<AddPlayer> {
 
+    record AddPlayer(String name) implements Requests<AddPlayer>{
+
+        @JsonIgnore
         @Override
         public Map<Predicate<AddPlayer>, String> getPredicates() {
             return Map.of(r -> Strings.isNotBlank(r.name()), "Name is required");

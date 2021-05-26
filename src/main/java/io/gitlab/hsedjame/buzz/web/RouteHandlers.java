@@ -22,21 +22,21 @@ public record RouteHandlers(BuzzService service) {
 
     public Mono<ServerResponse> addPlayer(ServerRequest request){
         return request.bodyToMono(Requests.AddPlayer.class)
-                .map(service::addPlayer)
+                .flatMap(service::addPlayer)
                 .flatMap(r -> ServerResponse.ok().bodyValue(r))
                 .onErrorResume(this::onError);
     }
 
     public Mono<ServerResponse> addBuzz(ServerRequest request){
         return request.bodyToMono(Requests.Buzz.class)
-                .map(service::addBuzz)
+                .flatMap(service::addBuzz)
                 .flatMap(r -> ServerResponse.ok().bodyValue(r))
                 .onErrorResume(this::onError);
     }
 
     public Mono<ServerResponse> addAnswer(ServerRequest request){
         return request.bodyToMono(Requests.Answer.class)
-                .map(service::addAnswer)
+                .flatMap(service::addAnswer)
                 .flatMap(r -> ServerResponse.ok().bodyValue(r))
                 .onErrorResume(this::onError);
     }
