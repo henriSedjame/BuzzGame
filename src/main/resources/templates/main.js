@@ -4,6 +4,7 @@ import {EventSources} from "./event-sources.js";
 import {StorageService} from "./storageService.js";
 import {PlayerInfo} from "./player-info.js";
 import {GeoService} from "./geoService.js";
+import {HttpClient} from "./http-client.js";
 
 
 /* Variables globales */
@@ -11,6 +12,10 @@ let name = "";
 let nbPlayers = 0;
 
 const colorRed = "#FF0000FF";
+const colorGrey = "#4e4c4c";
+const colorBlue = "#0d6efc";
+const colorYellow = "#f6b900";
+const colorWhite = "#ffffff";
 
 /* Html Elements */
 let registrationBloc = document.getElementById("registrationBloc");
@@ -20,14 +25,20 @@ let playersBloc = document.getElementById("players");
 let buzzButton = document.getElementById("buzzButton");
 let buzzButtonContainer = document.getElementById("buzzButtonContainer");
 
+let questionBloc = document.getElementById("questionBloc");
 let questionLabel = document.getElementById("questionLabel");
 let answer1 = document.getElementById("answer_1");
 let answer2 = document.getElementById("answer_1");
 let answer3 = document.getElementById("answer_1");
 
+let buzzer = null;
+let qnumber = null;
 
 
 /* Services */
+
+let httpClient = new HttpClient();
+
 let storageService = new StorageService();
 
 let geoService = new GeoService();
@@ -45,12 +56,7 @@ let authService = new AuthService(
     }
 );
 
-let gameService = new GameService(
-    score => {
-    },
-    score => {
-    }
-);
+let gameService = new GameService(httpClient);
 
 geoService.getIp(
     ip => {
@@ -79,6 +85,41 @@ geoService.getIp(
                 }
             },
             question => {
+                qnumber = question.number;
+
+                questionBloc.style.display = "none";
+                questionLabel.innerText = question.label;
+                answer1.innerText = question.answers[0].label;
+                answer2.innerText = question.answers[1].label;
+                answer3.innerText = question.answers[2].label;
+
+                changeBtnColor(answer1, colorBlue);
+                changeBtnColor(answer2, colorBlue);
+                changeBtnColor(answer3, colorBlue);
+
+                answerClick(answer1, 0, answer2, answer3);
+                answerClick(answer2, 1, answer2, answer1);
+                answerClick(answer3, 3, answer1, answer2);
+
+            },
+            canBuzz => {
+                if(canBuzz) {enableBuzz();  } else { disableBuzz();}
+            },
+            buzz => {
+                let pName = buzz.author;
+                let pView = document.getElementById(pName);
+                pView.style.backgroundColor = colorYellow;
+            },
+            answer => {
+                let pName = answer.playerName;
+                let pView = document.getElementById(pName);
+                pView.style.backgroundColor = colorYellow;
+
+                if(answer.answer.good){
+                    alert("Bonne réponse !")
+                } else {
+                    alert("Mauvaise réponse! ")
+                }
 
             }
         );
@@ -90,10 +131,8 @@ geoService.getIp(
 )
 
 
-
-
 /* Functions */
-function init(ip){
+function init(ip) {
     if (authService.isConnected(ip)) {
         registrationBloc.style.display = "none";
         let player = storageService.getPlayer(ip);
@@ -108,7 +147,6 @@ function init(ip){
         }
         playerNameInput.addEventListener("input", ev => {
             name = playerNameInput.value;
-
         });
         playerNameBtn.onclick = () => {
             if (name !== "") {
@@ -140,4 +178,35 @@ function createPlayerView(info) {
 
 function playerViewExist(player) {
     return document.getElementById(player) !== null;
+}
+
+function changeBtnColor(btn, color) {
+    btn.style.backgroundColor = color;
+    btn.style.borderColor = color;
+}
+
+function enableBuzz() {
+    buzzButton.onclick = () => {
+        buzzer = ip;
+        disableBuzz();
+        let pname = storageService.getPlayer(ip).name;
+        gameService.buzz(pname);
+    }
+}
+
+function disableBuzz() {
+    buzzButton.onclick = null;
+    buzzButton.style.backgroundColor = colorGrey;
+}
+
+function answerClick(btn, number, btn2, btn3) {
+    btn.onclick = () => {
+        if (buzzer === ip) {
+            let pname = storageService.getPlayer(ip).name;
+            gameService.answer(pname, qnumber, number);
+            changeBtnColor(btn2, colorGrey);
+            changeBtnColor(btn3, colorGrey);
+            buzzer = null;
+        }
+    }
 }

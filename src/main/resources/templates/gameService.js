@@ -1,4 +1,7 @@
-import {StorageKeys} from "./storage-keys.js";
+
+import {Urls} from "./urls.js";
+import {AnswerReq, BuzzReq} from "./requests.js";
+
 
 export class Score{
     player;
@@ -11,25 +14,28 @@ export class Score{
 }
 export class GameService {
 
-    _scores = [];
-    _onNewPlayer;
-    _onScoreChange;
 
-    constructor(onNewPlayer, onScoreChange) {
-        this._onNewPlayer = onNewPlayer;
-        this._onScoreChange = onScoreChange;
+    _httpClient;
+
+    constructor(httpClient) {
+        this._httpClient = httpClient;
     }
 
-    addScore(score) {
-        let p = this._scores.find(p => p.player === score.player);
-        if (p !== null && p !== undefined){
-            p.score = score.score;
-            this._onScoreChange(p);
-        } else {
-            this._scores.push(score);
-            this._onNewPlayer(score);
-        }
-        localStorage.setItem(StorageKeys.PLAYER_SCORE, score.score);
+    buzz(name) {
+        let body = JSON.stringify(new BuzzReq(name));
+        this._httpClient.post(Urls.SEND_BUZZ_URL, body,
+            () => {},
+            (error) => { alert(error) });
     }
+
+    answer(name, q, a) {
+        let body = JSON.stringify(new AnswerReq(name, q, a));
+        this._httpClient.post(Urls.SEND_ANSWER_URL, body,
+            () => {},
+            (error) => { alert(error) });
+    }
+
+
+
 
 }

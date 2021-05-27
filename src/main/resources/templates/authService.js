@@ -20,7 +20,7 @@ export class AuthService {
         let req = new XMLHttpRequest();
         req.open("POST", Urls.ADD_PLAYER_URL);
         req.responseType = "text";
-        req.setRequestHeader("Content-Type", "application/x-ndjson")
+        req.setRequestHeader("Content-Type", "application/json")
 
         req.onload = () => {
 

@@ -5,8 +5,8 @@ import {AuthService} from "./authService.js";
 import {GameService, Score} from "./gameService.js";
 
 let scoreEs = new EventSource(Urls.SCORE_EVENTS_URL);
-//let answerEs = new EventSource(Urls.ANSWERS_EVENT_URL);
-//let buzzEs = new EventSource(Urls.BUZZ_EVENTS_URL);
+let answerEs = new EventSource(Urls.ANSWERS_EVENT_URL);
+let buzzEs = new EventSource(Urls.BUZZ_EVENTS_URL);
 let questionEs = new EventSource(Urls.QUESTION_EVENT_URL);
 let startEs = new EventSource(Urls.START_EVENT_URL);
 //let endEs = new EventSource(Urls.END_EVENT_URL);
@@ -18,12 +18,16 @@ export class EventSources {
     _onStartEnabled;
     _onNewQuestion;
     _onCanBuzz;
+    _onAnswerReceived;
+    _onBuzzReceived;
 
-    constructor(onPlayerScoreChanged, onStartEnabled, onNewQuestion, onCanBuzz) {
+    constructor(onPlayerScoreChanged, onStartEnabled, onNewQuestion, onCanBuzz, onBuzz, onNewAnswer) {
         this._onPlayerScoreChanged = onPlayerScoreChanged;
         this._onStartEnabled = onStartEnabled;
         this._onNewQuestion = onNewQuestion;
         this._onCanBuzz = onCanBuzz;
+        this._onBuzzReceived = onBuzz;
+        this._onAnswerReceived = onNewAnswer;
     }
 
     init() {
@@ -31,20 +35,25 @@ export class EventSources {
             let score = JSON.parse(evt.data);
             this._onPlayerScoreChanged(score);
         }
-
         startEs.onmessage = (evt) => {
             let start = JSON.parse(evt.data);
             this._onStartEnabled(start);
         }
-
         questionEs.onmessage = (evt) => {
             let question = JSON.parse(evt.data);
             this._onNewQuestion(question);
         }
-
         canBuzzEs.onmessage = (evt) => {
             let canBuzz = JSON.parse(evt.data);
             this._onCanBuzz(canBuzz);
+        }
+        buzzEs.onmessage = (evt) => {
+            let buzz = JSON.parse(evt.data);
+            this._onBuzzReceived(buzz);
+        }
+        answerEs.onmessage = (evt) => {
+            let answer = JSON.parse(evt.data);
+            this._onAnswerReceived(answer);
         }
     }
 

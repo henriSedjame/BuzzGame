@@ -4,23 +4,23 @@ export class PlayerScoreMsg {
      goodAnswer;
 }
 
-class BuzzMsg {
+export class BuzzMsg {
     author;
     time;
 }
 
-class PlayerAnswerMsg {
+export class PlayerAnswerMsg {
     playerName;
     answer;
 }
 
-class AnswerMsg {
+export class AnswerMsg {
     number;
     label;
     good;
 }
 
-class Question {
+export class Question {
     number;
     label;
     points;
