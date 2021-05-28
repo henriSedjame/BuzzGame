@@ -8,17 +8,19 @@ export class HttpClient {
         let req = new XMLHttpRequest();
         req.open("POST", url);
         req.responseType = "text";
-        req.setRequestHeader("Content-Type", "application/x-ndjson")
+        req.setRequestHeader("Content-Type", "application/json")
 
         req.onload = () => {
 
-            let resp = (JSON.parse(req.responseText)) ;
+           /* console.log(JSON.parse(req.responseText));
+
+            let resp = (JSON.parse(req.responseText));
 
             if (ResponseType.ERROR === resp.type){
                 onFail(resp.message);
             } else {
                 onReceive();
-            }
+            }*/
 
         }
 

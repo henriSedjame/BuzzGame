@@ -46,13 +46,7 @@ public class BuzzApplication {
     @Bean
     public Emitters emitters(){
         return new Emitters(
-                Sinks.one(),
-                Sinks.one(),
-                Sinks.many().multicast().directAllOrNothing(),
                 Sinks.many().replay().all(),
-                Sinks.many().replay().all(),
-                Sinks.many().multicast().directAllOrNothing(),
-                Sinks.many().multicast().directBestEffort(),
                 Objects.requireNonNull(getQuestons()),
                 Objects.requireNonNull(getQuestons()).iterator()
         );
@@ -65,33 +59,45 @@ public class BuzzApplication {
                 6,
                 3,
                 new AtomicInteger(0),
-                new AtomicBoolean(false)
+                new AtomicBoolean(false),
+                new ArrayList<>()
         );
     }
 
-    @Bean
-    public Sinks.Many<Responses> responsesSink(){
-        return Sinks.many().unicast().onBackpressureBuffer(new ConcurrentLinkedQueue<>());
-    }
 
     private List<Messages.Question> getQuestons() {
 
         return List.of(
 
-                new Messages.Question(0, "Lequel de ces noms ne correspond pas à un langage informatique ?", 1, new TreeSet<>(
-                        List.of(
-                                new Messages.Answer(0, "Elm", false),
-                                new Messages.Answer(1, "Rust", false),
-                                new Messages.Answer(2, "Dark", true)
-                        )
+                new Messages.Question(0, "Lequel de ces noms ne correspond pas à un langage informatique ?", 1, List.of(
+                        new Messages.Answer(0, "Elm", false),
+                        new Messages.Answer(1, "Rust", false),
+                        new Messages.Answer(2, "Dark", true)
                 )),
-
-                new Messages.Question(1, "Dans le langage RUST quel mot clé est utilisé pour désigné une fonction ?", 1, new TreeSet<>(
-                        List.of(
-                                new Messages.Answer(0, "fun", false),
-                                new Messages.Answer(1, "fn", true),
-                                new Messages.Answer(2, "func", false)
-                        )
+                new Messages.Question(1, "Dans le langage RUST quel mot clé est utilisé pour désigné une fonction ?", 2, List.of(
+                        new Messages.Answer(0, "fun", false),
+                        new Messages.Answer(1, "fn", true),
+                        new Messages.Answer(2, "func", false)
+                )),
+                new Messages.Question(2, "Dans quelle version de java est apparu le mot clé 'default' ?", 1, List.of(
+                        new Messages.Answer(0, "Java 11", false),
+                        new Messages.Answer(1, "Java 8", true),
+                        new Messages.Answer(2, "Java 14", false)
+                )),
+                new Messages.Question(3, "Dans le langage RUST quel mot clé est utilisé pour définir une interface ?", 2, List.of(
+                        new Messages.Answer(0, "trait", true),
+                        new Messages.Answer(1, "inter", false),
+                        new Messages.Answer(2, "impl", false)
+                )),
+                new Messages.Question(4, "Dans le sigle WASI, que signifie le SI ?", 3, List.of(
+                        new Messages.Answer(0, "System Interface", true),
+                        new Messages.Answer(1, "Social Information", false),
+                        new Messages.Answer(2, "Systeme Informatique", false)
+                )),
+                new Messages.Question(5, "En Kotlin quel mot clé est utilisé pour une fonction asynchrone ?", 2, List.of(
+                        new Messages.Answer(0, "async", false),
+                        new Messages.Answer(1, "await", false),
+                        new Messages.Answer(2, "suspend", true)
                 ))
         );
     }

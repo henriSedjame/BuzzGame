@@ -6,10 +6,12 @@ import {ResponseType} from "./responses.js"
 
 export class AuthService {
 
+    _storageService;
     _onPlayerAdded;
     _onPlayerAddFail;
 
-    constructor(onPlayerAdd, onPlayerAddFail) {
+    constructor(storageService, onPlayerAdd, onPlayerAddFail) {
+        this._storageService = storageService;
         this._onPlayerAdded = onPlayerAdd;
         this._onPlayerAddFail = onPlayerAddFail
     }
@@ -37,9 +39,11 @@ export class AuthService {
         req.send(body);
     }
 
-    isConnected(ip){
-        let item = localStorage.getItem(ip);
-        return item !== null && item !== undefined;
+    isConnected(ip, name){
+
+        let p = this._storageService.getPlayer(ip, name);
+
+        return p !== null && p !== undefined;
     }
 
 }

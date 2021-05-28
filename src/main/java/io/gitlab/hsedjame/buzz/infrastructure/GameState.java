@@ -2,6 +2,8 @@ package io.gitlab.hsedjame.buzz.infrastructure;
 
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -10,7 +12,8 @@ public record GameState(
       int maxPlayers,
       int minPlayers,
       AtomicInteger numberOfPlayers,
-      AtomicBoolean buzzed
+      AtomicBoolean buzzed,
+      List<String> players
 ) {
 
     public void start(){
@@ -22,10 +25,13 @@ public record GameState(
         started.set(false);
     }
 
-    public boolean addPlayer(){
-        if (numberOfPlayers.get() < maxPlayers)
-            if(numberOfPlayers.incrementAndGet() == maxPlayers)
-                start();
+    public boolean addPlayer(String name){
+        if (!players.contains(name)) players.add(name);
+
+        if(!started.get())
+            if (numberOfPlayers.get() < maxPlayers)
+                if(numberOfPlayers.incrementAndGet() == maxPlayers)
+                    start();
 
         return numberOfPlayers.get() >= minPlayers;
     }

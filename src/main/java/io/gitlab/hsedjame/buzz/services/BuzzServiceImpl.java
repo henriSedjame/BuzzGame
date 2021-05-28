@@ -2,7 +2,6 @@ package io.gitlab.hsedjame.buzz.services;
 
 import io.gitlab.hsedjame.buzz.data.db.Player;
 import io.gitlab.hsedjame.buzz.data.db.PlayerRepository;
-import io.gitlab.hsedjame.buzz.data.dto.Messages;
 import io.gitlab.hsedjame.buzz.data.dto.Requests;
 import io.gitlab.hsedjame.buzz.data.dto.Responses;
 import io.gitlab.hsedjame.buzz.infrastructure.Emitters;
@@ -12,11 +11,14 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import static io.gitlab.hsedjame.buzz.services.Utils.with;
+
 @Service
 public record BuzzServiceImpl(Emitters emitters,
                               GameState gameState,
                               PlayerRepository playerRepository,
                               R2dbcEntityTemplate entityTemplate) implements BuzzService {
+
 
     @Override
     public Mono<Responses.GameStarted> startGame() {
@@ -27,26 +29,25 @@ public record BuzzServiceImpl(Emitters emitters,
     @Override
     public Mono<Responses.PlayerAdded> addPlayer(Requests.AddPlayer request) {
 
-        String name = request.name();
-
-        return playerRepository.existsByName(name)
-                .flatMap(exist -> {
-                    if (exist) return Mono.error(new BuzzException.NameAlreadyUsed(name));
-                    return entityTemplate.insert(Player.withName(name))
-                            .map(p -> {
-                                emitters.emitScore(p, null);
-                                if(gameState.addPlayer())
-                                    emitters.gameStart();
-                                return new Responses.PlayerAdded();
-                            });
-                });
+        return with(request::name,
+                name -> playerRepository.existsByName(name)
+                        .flatMap(exist -> {
+                            if (exist) return Mono.error(new BuzzException.NameAlreadyUsed(name));
+                            return entityTemplate.insert(Player.withName(name))
+                                    .map(p -> {
+                                        boolean b = gameState.addPlayer(name);
+                                        emitters.emitScore(p, null, false, gameState.players(), gameState.minPlayers());
+                                        if (b) emitters.gameStart(gameState.players());
+                                        return new Responses.PlayerAdded();
+                                    });
+                        }));
     }
 
     @Override
     public Mono<Responses.BuzzRegistered> addBuzz(Requests.Buzz request) {
         return gameState.addBuzz()
                 .flatMap(buzzed -> {
-                    if (buzzed){
+                    if (buzzed) {
                         emitters.registerBuzz(request);
                         return Mono.just(new Responses.BuzzRegistered());
                     }
@@ -56,12 +57,20 @@ public record BuzzServiceImpl(Emitters emitters,
 
     @Override
     public Mono<Responses.AnswerRegistered> addAnswer(Requests.Answer request) {
-        return playerRepository.findByName(request.playerName())
-                .map(p -> {
-                    emitters.registerAnswer(request, p, (pl, point) ->
-                         playerRepository.save(new Player(pl.id(), pl.name(), pl.score() + point))
-                    );
-                    return new Responses.AnswerRegistered();
-                });
+
+        return gameState.releaseBuzz()
+                .flatMap(released ->
+                        playerRepository.findByName(request.playerName())
+                                .map(p -> {
+                                    emitters.registerAnswer(
+                                            request,
+                                            p,
+                                            (pl, point) -> playerRepository.save(
+                                                    new Player(pl.id(), pl.name(), pl.score() + point)), gameState);
+
+                                    return new Responses.AnswerRegistered();
+                                }));
     }
+
+
 }

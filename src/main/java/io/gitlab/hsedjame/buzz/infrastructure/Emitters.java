@@ -12,75 +12,62 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 public record Emitters(
-        Sinks.One<Boolean> startGame,
-        Sinks.One<Boolean> endGame,
-        Sinks.Many<Boolean> canBuzz,
-        Sinks.Many<Messages.PlayerScore> playerScores,
-        Sinks.Many<Messages.Question> questions,
-        Sinks.Many<Messages.Buzz> buzzes,
-        Sinks.Many<Messages.PlayerAnswer> answers,
+        Sinks.Many<Messages.StateChange> stateChanges,
         List<Messages.Question> questionList,
         Iterator<Messages.Question> questionsIterator
 ) {
 
-    public void gameStart() {
-
-        startGame.emitValue(Boolean.TRUE, ((signalType, emitResult) -> {
-
-            var retry = switch (emitResult) {
-
-                case OK, FAIL_TERMINATED, FAIL_OVERFLOW, FAIL_CANCELLED, FAIL_NON_SERIALIZED -> {
-                    yield false;
-                }
-
-                case FAIL_ZERO_SUBSCRIBER -> {
-                    yield true;
-                }
-            };
-
-            return signalType.equals(SignalType.SUBSCRIBE) && retry;
-        }));
+    public void gameStart(List<String> players) {
+        stateChanges.tryEmitNext(Messages.StateChange.start(players));
 
         enableBuzz();
         nextQuestion();
     }
 
-    public void emitScore(Player player, String goodAnswer) {
-        playerScores.tryEmitNext(new Messages.PlayerScore(player.name(), player.score(), goodAnswer));
+    public void emitScore(Player player, String goodAnswer, boolean update, List<String> players, int nb) {
+        stateChanges.tryEmitNext(Messages.StateChange.withScore(
+                new Messages.PlayerScore(player.name(), player.score(), goodAnswer, update), players, nb));
     }
 
     public void nextQuestion() {
         if (questionsIterator.hasNext())
-            questions.tryEmitNext(questionsIterator().next());
-
-        endGame.tryEmitValue(Boolean.TRUE);
+            stateChanges.tryEmitNext(Messages.StateChange.withQuestion(questionsIterator().next()));
+        else
+            stateChanges.tryEmitNext(Messages.StateChange.end());
     }
 
     public void registerBuzz(Requests.Buzz buzzz) {
         disableBuzz();
-        buzzes.tryEmitNext(new Messages.Buzz(buzzz.playerName(), LocalDateTime.now()));
+        stateChanges.tryEmitNext(
+                Messages.StateChange.withBuzz(new Messages.Buzz(buzzz.playerName()))
+        );
     }
 
-    public void registerAnswer(Requests.Answer answer, Player player, BiFunction<Player, Integer, Mono<Player>> updatePlayerScore) {
+    public void registerAnswer(Requests.Answer answer, Player player, BiFunction<Player, Integer, Mono<Player>> updatePlayerScore, GameState state) {
 
         questionList.stream()
                 .filter(q -> q.number() == answer.questionNumber())
                 .findFirst()
                 .ifPresent(q -> {
-                    boolean b = q.answers().stream().anyMatch(a -> a.good() && a.number() == answer.answerNumber());
-                    if (b) updatePlayerScore
+                    Messages.Answer goodAnswer = q.answers().stream().filter(Messages.Answer::good).findFirst().get();
+                    boolean good = goodAnswer.number() == answer.answerNumber();
+
+
+                    stateChanges.tryEmitNext(Messages.StateChange.withAnswer(
+                            new Messages.PlayerAnswer(player.name(), new Messages.Answer(0, goodAnswer.label(), good))));
+
+                    if (good) updatePlayerScore
                             .apply(player, q.points())
-                            .doOnNext(p -> emitScore(p, null));
+                            .subscribe(p -> emitScore(p, null, true, state.players(), state.minPlayers()));
 
-                    else emitScore(player, q.answers().stream().filter(Messages.Answer::good).map(Messages.Answer::label).findFirst().get());
-
-                    enableBuzz();
+                    else emitScore(player, q.answers().stream().filter(Messages.Answer::good).map(Messages.Answer::label).findFirst().get(), true, state.players(), state.minPlayers());
 
                     Timer timer = new Timer();
 
                     timer.schedule(new TimerTask() {
                         @Override
                         public void run() {
+                            enableBuzz();
                             nextQuestion();
                             timer.cancel();
                         }
@@ -90,10 +77,10 @@ public record Emitters(
     }
 
     public void disableBuzz() {
-        canBuzz.tryEmitNext(false);
+        stateChanges.tryEmitNext(Messages.StateChange.withCanBuzz(false));
     }
 
     public void enableBuzz() {
-        canBuzz.tryEmitNext(true);
+        stateChanges.tryEmitNext(Messages.StateChange.withCanBuzz(true));
     }
 }
