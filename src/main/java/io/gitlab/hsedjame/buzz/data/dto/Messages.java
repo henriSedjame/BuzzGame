@@ -3,6 +3,7 @@ package io.gitlab.hsedjame.buzz.data.dto;
 import java.util.List;
 
 public class Messages {
+
     public static record Question(int number, String label, int points, List<Answer> answers){}
     public static record Answer(int number, String label, boolean good) implements Comparable<Answer>{
         @Override

@@ -15,6 +15,7 @@ public record BuzzEventsController(Emitters emitters) {
 
     @GetMapping(value = "/states")
     public Flux<Messages.StateChange> states(){
+
         return emitters.stateChanges().asFlux();
     }
 

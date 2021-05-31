@@ -64,7 +64,6 @@ public class BuzzApplication {
         );
     }
 
-
     private List<Messages.Question> getQuestons() {
 
         return List.of(

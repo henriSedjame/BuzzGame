@@ -16,7 +16,6 @@ export class EventSources {
     _onAnswerReceived;
     _onBuzzReceived;
 
-
     constructor(onPlayerScoreChanged, onStartEnabled, onNewQuestion, onCanBuzz, onBuzz, onNewAnswer,) {
         this._onPlayerScoreChanged = onPlayerScoreChanged;
         this._onStartEnabled = onStartEnabled;
@@ -59,6 +58,5 @@ export class EventSources {
         }
 
     }
-
 
 }
