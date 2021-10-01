@@ -9,10 +9,7 @@ import io.gitlab.hsedjame.buzz.infrastructure.GameState;
 import io.gitlab.hsedjame.buzz.services.exceptions.BuzzException;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Locale;
 
 import static io.gitlab.hsedjame.buzz.services.Utils.applyWith;
 
@@ -32,7 +29,7 @@ public record BuzzServiceImpl(Emitters emitters,
     @Override
     public Mono<Responses.PlayerAdded> addPlayer(Requests.AddPlayer request) {
 
-        return with(request::name,
+        return applyWith(request::name,
                 name -> playerRepository.existsByName(name)
                         .flatMap(exist -> {
                             if (exist) return Mono.error(new BuzzException.NameAlreadyUsed(name));
