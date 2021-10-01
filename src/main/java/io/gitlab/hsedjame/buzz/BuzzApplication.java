@@ -1,7 +1,6 @@
 package io.gitlab.hsedjame.buzz;
 
 import io.gitlab.hsedjame.buzz.data.dto.Messages;
-import io.gitlab.hsedjame.buzz.data.dto.Responses;
 import io.gitlab.hsedjame.buzz.infrastructure.Emitters;
 import io.gitlab.hsedjame.buzz.infrastructure.GameState;
 import org.springframework.boot.CommandLineRunner;
@@ -13,7 +12,6 @@ import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,29 +24,30 @@ public class BuzzApplication {
 
     @Bean
     public CommandLineRunner runner(R2dbcEntityTemplate template){
-        return args -> {
-            template.getDatabaseClient()
-                    .sql("""
-                    CREATE TABLE Players (
-                        id VARCHAR(255)  PRIMARY KEY, 
-                        name VARCHAR(255) NOT NULL UNIQUE,
-                        score INT8 DEFAULT 0
-                    )\
-                    """)
-                    .fetch()
-                    .rowsUpdated()
-                    .as(StepVerifier::create)
-                    .expectNextCount(1)
-                    .verifyComplete();
-        };
+        return args -> template.getDatabaseClient()
+                .sql("""
+                CREATE TABLE Players (
+                    id VARCHAR(255)  PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL UNIQUE,
+                    score INT8 DEFAULT 0
+                )\
+                """)
+                .fetch()
+                .rowsUpdated()
+                .as(StepVerifier::create)
+                .expectNextCount(1)
+                .verifyComplete();
     }
 
     @Bean
     public Emitters emitters(){
+        List<Messages.Question> questions = new ArrayList<>(getQuestions());
+        Collections.shuffle(questions);
+
         return new Emitters(
                 Sinks.many().replay().all(),
-                Objects.requireNonNull(getQuestons()),
-                Objects.requireNonNull(getQuestons()).iterator()
+                Objects.requireNonNull(questions),
+                Objects.requireNonNull(questions).iterator()
         );
     }
 
@@ -64,8 +63,7 @@ public class BuzzApplication {
         );
     }
 
-
-    private List<Messages.Question> getQuestons() {
+    private List<Messages.Question> getQuestions() {
 
         return List.of(
 
@@ -98,6 +96,16 @@ public class BuzzApplication {
                         new Messages.Answer(0, "async", false),
                         new Messages.Answer(1, "await", false),
                         new Messages.Answer(2, "suspend", true)
+                )),
+                new Messages.Question(6, "Dans le language GO, quel mot clé permet de créer un thread ?", 3, List.of(
+                        new Messages.Answer(0, "go", true),
+                        new Messages.Answer(1, "thread", false),
+                        new Messages.Answer(2, "th", true)
+                )),
+                new Messages.Question(7, "Dans quel lanquage retrouve t-on le mot clé 'defer' ?", 2, List.of(
+                        new Messages.Answer(0, "Python", false),
+                        new Messages.Answer(1, "Go", true),
+                        new Messages.Answer(2, "Java", false)
                 ))
         );
     }

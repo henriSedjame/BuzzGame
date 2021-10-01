@@ -24,13 +24,11 @@ public sealed interface Responses {
             this(Type.ANSWER_REGISTERED);
         }
     }
-
     record Error(Type type, String message) implements Responses {
         public Error(String message){
             this(Type.ERROR, message);
         }
     }
-
     enum Type {
         ERROR, GAME_STARTED, PLAYER_ADDED, BUZZ_REGISTERED, ANSWER_REGISTERED
     }

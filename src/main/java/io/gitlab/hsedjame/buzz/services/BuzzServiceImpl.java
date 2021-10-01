@@ -19,7 +19,6 @@ public record BuzzServiceImpl(Emitters emitters,
                               PlayerRepository playerRepository,
                               R2dbcEntityTemplate entityTemplate) implements BuzzService {
 
-
     @Override
     public Mono<Responses.GameStarted> startGame() {
         gameState.start();
@@ -28,11 +27,12 @@ public record BuzzServiceImpl(Emitters emitters,
 
     @Override
     public Mono<Responses.PlayerAdded> addPlayer(Requests.AddPlayer request) {
-
         return with(request::name,
                 name -> playerRepository.existsByName(name)
                         .flatMap(exist -> {
-                            if (exist) return Mono.error(new BuzzException.NameAlreadyUsed(name));
+                            if (exist)
+                                return Mono.error(new BuzzException.NameAlreadyUsed(name));
+
                             return entityTemplate.insert(Player.withName(name))
                                     .map(p -> {
                                         boolean b = gameState.addPlayer(name);
@@ -57,7 +57,6 @@ public record BuzzServiceImpl(Emitters emitters,
 
     @Override
     public Mono<Responses.AnswerRegistered> addAnswer(Requests.Answer request) {
-
         return gameState.releaseBuzz()
                 .flatMap(released ->
                         playerRepository.findByName(request.playerName())

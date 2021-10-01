@@ -24,6 +24,7 @@ public class Messages {
             List<String> players,
             int requiredNbPlayers
     ){
+
         public static StateChange start(List<String> players){
             return new StateChange(StateChangeType.GAME_START, false, null, null, null, null, players, 0);
         }
@@ -39,12 +40,15 @@ public class Messages {
         public static StateChange withScore(PlayerScore score, List<String> players, int requiredNbPlayers){
             return new StateChange(StateChangeType.NEW_PLAYER_SCORE, false, score, null, null, null, players,requiredNbPlayers);
         }
+
         public static StateChange withQuestion(Question question){
             return new StateChange(StateChangeType.NEW_QUESTION, false, null, question, null, null, null,0);
         }
+
         public static StateChange withBuzz(Buzz buzz){
             return new StateChange(StateChangeType.NEW_BUZZ, false, null, null, buzz, null, null,0);
         }
+
         public static StateChange withAnswer(PlayerAnswer answer){
             return new StateChange(StateChangeType.NEW_ANSWER, false, null, null, null, answer, null,0);
         }
