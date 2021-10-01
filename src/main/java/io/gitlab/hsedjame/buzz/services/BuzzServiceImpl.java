@@ -9,15 +9,19 @@ import io.gitlab.hsedjame.buzz.infrastructure.GameState;
 import io.gitlab.hsedjame.buzz.services.exceptions.BuzzException;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static io.gitlab.hsedjame.buzz.services.Utils.with;
+import java.util.Locale;
+
+import static io.gitlab.hsedjame.buzz.services.Utils.applyWith;
 
 @Service
 public record BuzzServiceImpl(Emitters emitters,
                               GameState gameState,
                               PlayerRepository playerRepository,
                               R2dbcEntityTemplate entityTemplate) implements BuzzService {
+
 
     @Override
     public Mono<Responses.GameStarted> startGame() {
@@ -27,19 +31,27 @@ public record BuzzServiceImpl(Emitters emitters,
 
     @Override
     public Mono<Responses.PlayerAdded> addPlayer(Requests.AddPlayer request) {
+
         return with(request::name,
                 name -> playerRepository.existsByName(name)
                         .flatMap(exist -> {
-                            if (exist)
-                                return Mono.error(new BuzzException.NameAlreadyUsed(name));
-
+                            if (exist) return Mono.error(new BuzzException.NameAlreadyUsed(name));
                             return entityTemplate.insert(Player.withName(name))
-                                    .map(p -> {
-                                        boolean b = gameState.addPlayer(name);
-                                        emitters.emitScore(p, null, false, gameState.players(), gameState.minPlayers());
-                                        if (b) emitters.gameStart(gameState.players());
-                                        return new Responses.PlayerAdded();
-                                    });
+                                    .map(p ->
+                                            applyWith(() -> gameState.addPlayer(name),
+                                                    added -> {
+                                                        emitters.emitScore(
+                                                                p,
+                                                                null,
+                                                                false,
+                                                                gameState.players(),
+                                                                gameState.minPlayers());
+
+                                                        if (added) emitters.gameStart(gameState.players());
+
+                                                        return new Responses.PlayerAdded();
+                                                    })
+                                    );
                         }));
     }
 
@@ -70,6 +82,5 @@ public record BuzzServiceImpl(Emitters emitters,
                                     return new Responses.AnswerRegistered();
                                 }));
     }
-
 
 }
