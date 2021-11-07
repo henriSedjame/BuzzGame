@@ -2,7 +2,8 @@ package io.gitlab.hsedjame.buzz.infrastructure;
 
 import io.gitlab.hsedjame.buzz.data.dto.Messages;
 import io.gitlab.hsedjame.buzz.data.dto.Requests;
-import org.junit.jupiter.api.Assertions;
+import io.gitlab.hsedjame.buzz.data.dto.States;
+import io.gitlab.hsedjame.buzz.services.Emitters;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -10,33 +11,38 @@ import reactor.test.StepVerifier;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @SpringBootTest
 class EmittersTest {
 
     @Autowired
     private Emitters emitters;
 
+    @Autowired
+    private GameInfo gameInfo;
+
     @Test
     void gameStart() {
-        StepVerifier.FirstStep<Messages.StateChange> stateChangeVerifier = StepVerifier.create(emitters.stateChanges().asFlux());
+        StepVerifier.FirstStep<States.StateChange> stateChangeVerifier = StepVerifier.create(emitters.stateChanges().asFlux());
 
         List<String> players = List.of("joe", "martin", "lucie");
 
-        emitters.gameStart(players);
+        gameInfo.players().addAll(players);
 
-        emitters.registerBuzz(new Requests.Buzz("joe"));
+        emitters.onGameStarted(gameInfo);
+
+        emitters.onBuzzRegistered(new Requests.Buzz("joe"));
 
         emitters.stateChanges().tryEmitComplete();
 
+        Messages.Question question = gameInfo.currentQuestion().get().getFirst();
+
         stateChangeVerifier.
                 expectNext(
-                        Messages.StateChange.start(players),
-                        Messages.StateChange.withCanBuzz(true),
-                        Messages.StateChange.withQuestion(emitters.questionList().get(0)),
-                        Messages.StateChange.withCanBuzz(false),
-                        Messages.StateChange.withBuzz(new Messages.Buzz("joe"))
+                        States.StateChange.start(players),
+                        States.StateChange.withCanBuzz(true),
+                        States.StateChange.withQuestion(question),
+                        States.StateChange.withCanBuzz(false),
+                        States.StateChange.withBuzz(new Messages.Buzz("joe"))
                 )
                 .expectComplete()
                 .verify();

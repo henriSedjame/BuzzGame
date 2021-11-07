@@ -4,8 +4,7 @@ import io.gitlab.hsedjame.buzz.data.db.Player;
 import io.gitlab.hsedjame.buzz.data.db.PlayerRepository;
 import io.gitlab.hsedjame.buzz.data.dto.Requests;
 import io.gitlab.hsedjame.buzz.data.dto.Responses;
-import io.gitlab.hsedjame.buzz.infrastructure.Emitters;
-import io.gitlab.hsedjame.buzz.infrastructure.GameState;
+import io.gitlab.hsedjame.buzz.infrastructure.GameInfo;
 import io.gitlab.hsedjame.buzz.services.exceptions.BuzzException;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
@@ -15,14 +14,14 @@ import static io.gitlab.hsedjame.buzz.services.Utils.applyWith;
 
 @Service
 public record BuzzServiceImpl(Emitters emitters,
-                              GameState gameState,
+                              GameInfo gameInfo,
                               PlayerRepository playerRepository,
                               R2dbcEntityTemplate entityTemplate) implements BuzzService {
 
 
     @Override
     public Mono<Responses.GameStarted> startGame() {
-        gameState.start();
+        gameInfo.start();
         return Mono.just(new Responses.GameStarted());
     }
 
@@ -35,16 +34,16 @@ public record BuzzServiceImpl(Emitters emitters,
                             if (exist) return Mono.error(new BuzzException.NameAlreadyUsed(name));
                             return entityTemplate.insert(Player.withName(name))
                                     .map(p ->
-                                            applyWith(() -> gameState.addPlayer(name),
+                                            applyWith(() -> gameInfo.addPlayer(name),
                                                     added -> {
                                                         emitters.emitScore(
                                                                 p,
                                                                 null,
                                                                 false,
-                                                                gameState.players(),
-                                                                gameState.minPlayers());
+                                                                gameInfo.players(),
+                                                                gameInfo.minPlayers());
 
-                                                        if (added) emitters.gameStart(gameState.players());
+                                                        if (added) emitters.onGameStarted(gameInfo);
 
                                                         return new Responses.PlayerAdded();
                                                     })
@@ -54,10 +53,10 @@ public record BuzzServiceImpl(Emitters emitters,
 
     @Override
     public Mono<Responses.BuzzRegistered> addBuzz(Requests.Buzz request) {
-        return gameState.addBuzz()
+        return gameInfo.addBuzz()
                 .flatMap(buzzed -> {
                     if (buzzed) {
-                        emitters.registerBuzz(request);
+                        emitters.onBuzzRegistered(request);
                         return Mono.just(new Responses.BuzzRegistered());
                     }
                     return Mono.empty();
@@ -66,18 +65,23 @@ public record BuzzServiceImpl(Emitters emitters,
 
     @Override
     public Mono<Responses.AnswerRegistered> addAnswer(Requests.Answer request) {
-        return gameState.releaseBuzz()
-                .flatMap(released ->
-                        playerRepository.findByName(request.playerName())
-                                .map(p -> {
-                                    emitters.registerAnswer(
-                                            request,
-                                            p,
-                                            (pl, point) -> playerRepository.save(
-                                                    new Player(pl.id(), pl.name(), pl.score() + point)), gameState);
+        /*
+        * Release buzz
+        * Find the player who gives the answer
+        * And defer the answer registration to emitters
+        * Before return the AnswerRegistered Response
+        */
+        gameInfo.releaseBuzz()
 
-                                    return new Responses.AnswerRegistered();
-                                }));
+                .subscribe(released ->
+                        playerRepository.findByName(request.playerName())
+                                .subscribe(p ->
+                                    emitters.onAnswerRegistered(request, p,
+                                            (pl, point) -> playerRepository.save(
+                                                    new Player(pl.id(), pl.name(), pl.score() + point)), gameInfo)
+                                ));
+
+        return Mono.just( new Responses.AnswerRegistered());
     }
 
 }

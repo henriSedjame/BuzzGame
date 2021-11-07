@@ -1,6 +1,5 @@
 package io.gitlab.hsedjame.buzz.web;
 
-import io.gitlab.hsedjame.buzz.infrastructure.Emitters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -15,7 +14,7 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 public class RouteDefinitions {
 
     @Bean
-    public RouterFunction<ServerResponse> routeDefs(RouteHandlers handlers, Emitters emitters) {
+    public RouterFunction<ServerResponse> routeDefs(RouteHandlers handlers) {
         return nest(
                 POST("/game").and(accept(MediaType.APPLICATION_NDJSON)),
 

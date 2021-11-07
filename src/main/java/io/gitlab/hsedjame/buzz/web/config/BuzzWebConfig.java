@@ -14,7 +14,6 @@ public class BuzzWebConfig implements WebFluxConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry
                 .addResourceHandler("/**")
-
                 .addResourceLocations(CLASSPATH_RESOURCES_LOCATIONS);
     }
 

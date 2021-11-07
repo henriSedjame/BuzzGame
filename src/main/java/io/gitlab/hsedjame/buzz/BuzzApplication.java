@@ -1,8 +1,8 @@
 package io.gitlab.hsedjame.buzz;
 
 import io.gitlab.hsedjame.buzz.data.dto.Messages;
-import io.gitlab.hsedjame.buzz.infrastructure.Emitters;
-import io.gitlab.hsedjame.buzz.infrastructure.GameState;
+import io.gitlab.hsedjame.buzz.services.Emitters;
+import io.gitlab.hsedjame.buzz.infrastructure.GameInfo;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +14,7 @@ import reactor.test.StepVerifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 @SpringBootApplication
 public class BuzzApplication {
@@ -46,18 +47,18 @@ public class BuzzApplication {
 
         return new Emitters(
                 Sinks.many().replay().all(),
-                Objects.requireNonNull(questions),
                 Objects.requireNonNull(questions).iterator()
         );
     }
 
     @Bean
-    public GameState gameState() {
-        return new GameState(
+    public GameInfo gameState() {
+        return new GameInfo(
                 new AtomicBoolean(false),
                 6,
                 3,
                 new AtomicInteger(0),
+                new AtomicReference<>(),
                 new AtomicBoolean(false),
                 new ArrayList<>()
         );

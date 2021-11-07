@@ -12,7 +12,7 @@ export class HttpClient {
 
         req.onload = () => {
 
-           /* console.log(JSON.parse(req.responseText));
+           console.log(JSON.parse(req.responseText));
 
             let resp = (JSON.parse(req.responseText));
 
@@ -20,7 +20,7 @@ export class HttpClient {
                 onFail(resp.message);
             } else {
                 onReceive();
-            }*/
+            }
 
         }
 

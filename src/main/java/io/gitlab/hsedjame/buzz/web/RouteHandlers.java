@@ -4,12 +4,13 @@ import io.gitlab.hsedjame.buzz.data.dto.Requests;
 import io.gitlab.hsedjame.buzz.data.dto.Responses;
 import io.gitlab.hsedjame.buzz.services.BuzzService;
 import io.gitlab.hsedjame.buzz.services.exceptions.BuzzException;
-import org.reactivestreams.Publisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+
+import java.util.function.Function;
 
 @Component
 public record RouteHandlers(BuzzService service) {
@@ -21,28 +22,25 @@ public record RouteHandlers(BuzzService service) {
     }
 
     public Mono<ServerResponse> addPlayer(ServerRequest request){
-        return request.bodyToMono(Requests.AddPlayer.class)
-                .flatMap(service::addPlayer)
-                .flatMap(r -> ServerResponse.ok().bodyValue(r))
-                .onErrorResume(this::onError);
+        return handleRequest(request, Requests.AddPlayer.class, service::addPlayer);
     }
 
     public Mono<ServerResponse> addBuzz(ServerRequest request){
-        return request.bodyToMono(Requests.Buzz.class)
-                .flatMap(service::addBuzz)
-                .flatMap(r -> ServerResponse.ok().bodyValue(r))
-                .onErrorResume(this::onError);
+        return handleRequest(request, Requests.Buzz.class, service::addBuzz);
     }
 
     public Mono<ServerResponse> addAnswer(ServerRequest request){
-        return request.bodyToMono(Requests.Answer.class)
-                .flatMap(service::addAnswer)
-                .flatMap(r -> ServerResponse.ok().bodyValue(r))
-                .onErrorResume(this::onError);
+        return handleRequest(request, Requests.Answer.class, service::addAnswer);
     }
 
-    public <T> Mono<ServerResponse> sse(ServerRequest sr, Publisher<T> p){
-        return ServerResponse.ok().bodyValue(p).onErrorResume(this::onError);
+    /* PRIVATE METHODS */
+
+    private <T extends Requests<T>, R extends Responses> Mono<ServerResponse> handleRequest(ServerRequest request, Class<T> reqClazz, Function<T, Mono<R>> mapper) {
+        return request.bodyToMono(reqClazz)
+                .flatMap(mapper)
+                .flatMap(r -> ServerResponse.ok().bodyValue(r))
+                .onErrorResume(this::onError);
+
     }
 
     private Mono<ServerResponse> onError(Throwable error) {

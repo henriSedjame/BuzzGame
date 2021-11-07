@@ -18,6 +18,7 @@ public sealed class BuzzException extends Exception {
     public HttpStatus getStatus(){
         return status;
     }
+
     public static final class NameAlreadyUsed extends BuzzException{
         public NameAlreadyUsed(String name) {
             super(String.format("Name %s already used. Please choose another.", name), HttpStatus.NOT_ACCEPTABLE);

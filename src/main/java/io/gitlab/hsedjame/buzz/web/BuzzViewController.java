@@ -2,7 +2,7 @@ package io.gitlab.hsedjame.buzz.web;
 
 import io.gitlab.hsedjame.buzz.data.db.PlayerRepository;
 import io.gitlab.hsedjame.buzz.data.dto.Requests;
-import io.gitlab.hsedjame.buzz.infrastructure.GameState;
+import io.gitlab.hsedjame.buzz.infrastructure.GameInfo;
 import io.gitlab.hsedjame.buzz.services.BuzzService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,13 +10,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.Consumer;
 
 
 @Controller
-public record BuzzViewController(BuzzService service, GameState state, PlayerRepository repository) {
+public record BuzzViewController(BuzzService service, GameInfo info, PlayerRepository repository) {
 
     @GetMapping("/")
     public String getIndex(@RequestParam("player") String player) {
+
+        if (info.started().get()) return "game-started";
 
         Timer timer = new Timer();
 
@@ -24,7 +27,7 @@ public record BuzzViewController(BuzzService service, GameState state, PlayerRep
             @Override
             public void run() {
                 repository.existsByName(player)
-                        .subscribe(exist -> {
+                        .subscribe((Consumer<? super Boolean>) exist -> {
                             if(!exist) {
                                 service.addPlayer(new Requests.AddPlayer(player))
                                         .subscribe();
@@ -32,7 +35,6 @@ public record BuzzViewController(BuzzService service, GameState state, PlayerRep
                         });
             }
         }, 3000);
-
 
         return "index";
     }

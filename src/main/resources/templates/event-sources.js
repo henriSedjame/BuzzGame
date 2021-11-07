@@ -1,8 +1,7 @@
 
 import {Urls} from "./urls.js";
 import {PlayerScoreMsg, StateChangeType} from "./messages.js";
-import {AuthService} from "./authService.js";
-import {GameService, Score} from "./gameService.js";
+
 
 let states = new EventSource(Urls.STATE_EVENTS_URL);
 
@@ -43,13 +42,13 @@ export class EventSources {
                     this._onPlayerScoreChanged(state);
                     break;
                 case StateChangeType.NEW_QUESTION:
-                    this._onNewQuestion(state.question);
+                    this._onNewQuestion(state.message);
                     break;
                 case StateChangeType.NEW_BUZZ:
-                    this._onBuzzReceived(state.buzz);
+                    this._onBuzzReceived(state.message);
                     break;
                 case StateChangeType.NEW_ANSWER:
-                    this._onAnswerReceived(state.answer);
+                    this._onAnswerReceived(state.message);
                     break;
                 case StateChangeType.CAN_BUZZ:
                     this._onCanBuzz(state.canBuzz);

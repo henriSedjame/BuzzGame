@@ -75,13 +75,17 @@ let authService = new AuthService(storageService,
 
 let gameService = new GameService(httpClient);
 
+
+/* Logique métier */
+
 geoService.getIp(
     ip => {
 
+        /* Initiaiser les event-sources */
         let eventSources = new EventSources(
             state => {
                 
-                let score = state.playerScore;
+                let score = state.message;
 
                 let players = state.players;
 
@@ -103,7 +107,6 @@ geoService.getIp(
                     }
                 }
 
-
                 let playerName = score.playerName;
 
                 if (score.update) {
@@ -114,7 +117,6 @@ geoService.getIp(
                         sView.innerText = score.score;
                     }
                 }
-
 
                 let plScore = score.score;
                 let pn = score.playerName;
@@ -131,8 +133,6 @@ geoService.getIp(
 
             },
             (start, players) => {
-
-
                 if (start) {
 
                     for (const player of players) {
@@ -228,6 +228,7 @@ geoService.getIp(
 
 
 /* Functions */
+
 function init(ip) {
 
     if (authService.isConnected(ip, null)) {

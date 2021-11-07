@@ -5,6 +5,9 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
+/**
+ * Representation of a player in database
+ */
 @Table("Players")
 public record Player(@Id String id, String name, int score) {
     public static Player withName(String name){

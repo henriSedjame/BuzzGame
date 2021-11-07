@@ -35,10 +35,7 @@ export class Question {
 export class StateChange {
     type;
     canBuzz;
-    playerScore;
-    question;
-    buzz;
-    answer;
+    message;
     players;
     requiredNbPlayers;
 }
