@@ -17,11 +17,11 @@ import java.util.function.Consumer;
 public record BuzzViewController(BuzzService service, GameInfo info, PlayerRepository repository) {
 
     @GetMapping("/")
-    public String getIndex(@RequestParam("player") String player) {
+    public String getIndex() {
 
         if (info.started().get()) return "game-started";
 
-        Timer timer = new Timer();
+        /*Timer timer = new Timer();
 
         timer.schedule(new TimerTask() {
             @Override
@@ -34,7 +34,7 @@ public record BuzzViewController(BuzzService service, GameInfo info, PlayerRepos
                             }
                         });
             }
-        }, 3000);
+        }, 3000);*/
 
         return "index";
     }

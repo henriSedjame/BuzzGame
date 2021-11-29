@@ -14,14 +14,16 @@ export class EventSources {
     _onCanBuzz;
     _onAnswerReceived;
     _onBuzzReceived;
+    _onError;
 
-    constructor(onPlayerScoreChanged, onStartEnabled, onNewQuestion, onCanBuzz, onBuzz, onNewAnswer,) {
+    constructor(onPlayerScoreChanged, onStartEnabled, onNewQuestion, onCanBuzz, onBuzz, onNewAnswer, onError) {
         this._onPlayerScoreChanged = onPlayerScoreChanged;
         this._onStartEnabled = onStartEnabled;
         this._onNewQuestion = onNewQuestion;
         this._onCanBuzz = onCanBuzz;
         this._onBuzzReceived = onBuzz;
         this._onAnswerReceived = onNewAnswer;
+        this._onError = onError;
     }
 
     init() {
@@ -51,7 +53,10 @@ export class EventSources {
                     this._onAnswerReceived(state.message);
                     break;
                 case StateChangeType.CAN_BUZZ:
-                    this._onCanBuzz(state.canBuzz);
+                    this._onCanBuzz(state.message.canBuzz);
+                    break;
+                case StateChangeType.ERROR:
+                    this._onError(state.message.message)
                     break;
             }
         }

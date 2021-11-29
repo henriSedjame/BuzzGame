@@ -10,6 +10,9 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import static io.gitlab.hsedjame.buzz.services.Utils.applyWith;
 
 @Service
@@ -36,14 +39,25 @@ public record BuzzServiceImpl(Emitters emitters,
                                     .map(p ->
                                             applyWith(() -> gameInfo.addPlayer(name),
                                                     added -> {
-                                                        emitters.emitScore(
-                                                                p,
-                                                                null,
-                                                                false,
-                                                                gameInfo.players(),
-                                                                gameInfo.minPlayers());
 
-                                                        if (added) emitters.onGameStarted(gameInfo);
+                                                        Timer timer = new Timer();
+                                                        timer.schedule(new TimerTask() {
+                                                            @Override
+                                                            public void run() {
+                                                                emitters.emitScore(
+                                                                        p,
+                                                                        null,
+                                                                        false,
+                                                                        gameInfo.players(),
+                                                                        gameInfo.minPlayers());
+
+                                                                if (added) emitters.onGameStarted(gameInfo);
+
+                                                                timer.cancel();
+                                                            }
+                                                        }, 1000);
+
+
 
                                                         return new Responses.PlayerAdded();
                                                     })
@@ -72,7 +86,6 @@ public record BuzzServiceImpl(Emitters emitters,
         * Before return the AnswerRegistered Response
         */
         gameInfo.releaseBuzz()
-
                 .subscribe(released ->
                         playerRepository.findByName(request.playerName())
                                 .subscribe(p ->

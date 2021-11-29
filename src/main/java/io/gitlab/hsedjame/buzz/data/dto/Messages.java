@@ -17,5 +17,9 @@ public sealed interface Messages {
 
     record Buzz(String author) implements Messages{}
 
+    record CanBuzz(boolean canBuzz) implements Messages {}
+
     record PlayerScore(String playerName, int score, String goodAnswer, boolean update) implements Messages{}
+
+    record Error(String message) implements Messages {}
 }

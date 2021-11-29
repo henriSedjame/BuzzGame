@@ -20,7 +20,11 @@ const colorWhite = "#ffffff";
 
 /* Html Elements */
 
+let signupBloc = document.getElementById("signupBloc");
+let playerNameInput = document.getElementById("player_name");
+let signupBtn = document.getElementById("signupBtn");
 
+signupBtn.onclick = () => signup();
 
 let listPlayersBloc = document.getElementById("listPlayersBloc");
 let listPlayers = document.getElementById("listPlayers");
@@ -55,6 +59,8 @@ let playerz = [];
 let winners =[];
 let winnerScore = 0;
 
+let player_name;
+
 /* Services */
 
 let httpClient = new HttpClient();
@@ -65,6 +71,15 @@ let geoService = new GeoService();
 
 let authService = new AuthService(storageService,
     (player) => {
+        geoService.getIp(
+            ip => {
+                initEventSource(ip);
+
+                /* Logique */
+                init(ip, player);
+            }
+        );
+
         name = "";
     },
     msg => {
@@ -78,166 +93,171 @@ let gameService = new GameService(httpClient);
 
 /* Logique métier */
 
-geoService.getIp(
-    ip => {
-
-        /* Initiaiser les event-sources */
-        let eventSources = new EventSources(
-            state => {
-                
-                let score = state.message;
-
-                let players = state.players;
-
-                let requiredNbPlayers = state.requiredNbPlayers;
-
-                if(players.length < requiredNbPlayers) {
-
-                    listPlayersBloc.style.display = "block";
-                    nbReqPl.innerText = requiredNbPlayers;
-
-                    for (const player of players) {
-
-                        if (playerz.indexOf(player) === -1){
-                            playerz.push(player);
-                            let li = document.createElement("li");
-                            li.innerText = player;
-                            listPlayers.append(li);
-                        }
-                    }
-                }
-
-                let playerName = score.playerName;
-
-                if (score.update) {
-                    let player = storageService.getPlayer(ip, playerName);
-                    let pScore = player.score;
-                    if (pScore !== score.score) {
-                        let sView = document.getElementById("score_" + player.name);
-                        sView.innerText = score.score;
-                    }
-                }
-
-                let plScore = score.score;
-                let pn = score.playerName;
-
-                if(plScore === winnerScore){
-                    if(winners.indexOf(pn) === -1){
-                        winners.push(pn);
-                    }
-                } else if(score.score > winnerScore){
-                    winnerScore = plScore;
-                    winners = [];
-                    winners.push(pn);
-                }
-
-            },
-            (start, players) => {
-                if (start) {
-
-                    for (const player of players) {
-                        createPlayerView(new PlayerInfo(player, 0));
-                        storageService.storePlayer(ip, new PlayerScoreMsg(player));
-                    }
-                    setTimeout(() => {
-                        buzzButtonContainer.style.display = "block";
-                        listPlayersBloc.style.display = "none";
-                    }, 1000)
-
-                } else {
-                    buzzButtonContainer.style.display = "none";
-                    resultBloc.style.display = "none";
-                    resultBlocFail.style.display = "none";
-                    finalBloc.style.display = "block";
-                    if(winners.length > 1) {
-                        verb.innerText = "Et les gagants sont ";
-                    } else {
-                        verb.innerText = "Et le gagnant est ";
-                    }
-
-                    winner.innerText = winners.join(" & ");
-
-                    setTimeout(() => {
-                        finalBloc.style.display = "none";
-                    }, 2000)
-                }
-            },
-            question => {
-                resultBloc.style.display = "none";
-                resultBlocFail.style.display = "none";
-
-                qnumber = question.number;
-
-                questionBloc.style.display = "block";
-                questionLabel.innerText = question.label;
-                pointQuestion.innerText = question.points
-                answer1.innerText = question.answers[0].label;
-                answer2.innerText = question.answers[1].label;
-                answer3.innerText = question.answers[2].label;
-
-                changeBtnColor(answer1, colorBlue);
-                changeBtnColor(answer2, colorBlue);
-                changeBtnColor(answer3, colorBlue);
-
-                answerClick(ip, answer1, 0, answer2, answer3);
-                answerClick(ip, answer2, 1, answer2, answer1);
-                answerClick(ip, answer3, 2, answer1, answer2);
-
-            },
-            canBuzz => {
-                if (canBuzz) {
-                    enableBuzz(ip);
-                } else {
-                    disableBuzz();
-                }
-            },
-            buzz => {
-
-                disableBuzz();
-                let pName = buzz.author;
-                let pView = document.getElementById(pName);
-                pView.style.backgroundColor = colorYellow;
-            },
-            answer => {
-                disableBuzz();
-                questionBloc.style.display = "none";
-
-                changeBtnColor(answer1, colorGrey);
-                changeBtnColor(answer2, colorGrey);
-                changeBtnColor(answer3, colorGrey);
-
-                let pName = answer.playerName;
-                let pView = document.getElementById(pName);
-                pView.style.backgroundColor = colorWhite;
-                if (answer.answer.good) {
-                    resultBloc.style.display = "block";
-                } else {
-                    resultBlocFail.style.display = "block";
-                    goodAnswer.innerText = answer.answer.label;
-                }
-
-            }
-        );
-
-        eventSources.init();
-
-        /* Logique */
-        init(ip);
-    }
-)
 
 
 /* Functions */
 
-function init(ip) {
+function signup() {
+    let player = playerNameInput.value;
+    player_name = player;
+    authService.login(player);
+    signupBloc.style.display = 'none'
+}
+
+function initEventSource(ip) {
+    /* Initiaiser les event-sources */
+    let eventSources = new EventSources(
+        state => {
+
+            let score = state.message;
+
+            let players = state.players;
+
+            let requiredNbPlayers = state.requiredNbPlayers;
+
+            if (players.length < requiredNbPlayers) {
+
+                listPlayersBloc.style.display = "block";
+                nbReqPl.innerText = requiredNbPlayers;
+
+                for (const player of players) {
+
+                    if (playerz.indexOf(player) === -1) {
+                        playerz.push(player);
+                        let li = document.createElement("li");
+                        li.innerText = player;
+                        listPlayers.append(li);
+                    }
+                }
+            }
+
+            let playerName = score.playerName;
+
+            if (score.update) {
+                let player = storageService.getPlayer(ip, playerName);
+                let pScore = player.score;
+                if (pScore !== score.score) {
+                    let sView = document.getElementById("score_" + player.name);
+                    sView.innerText = score.score;
+                }
+            }
+
+            let plScore = score.score;
+            let pn = score.playerName;
+
+            if (plScore === winnerScore) {
+                if (winners.indexOf(pn) === -1) {
+                    winners.push(pn);
+                }
+            } else if (score.score > winnerScore) {
+                winnerScore = plScore;
+                winners = [];
+                winners.push(pn);
+            }
+
+        },
+        (start, players) => {
+            if (start) {
+
+                for (const player of players) {
+                    createPlayerView(new PlayerInfo(player, 0));
+                    storageService.storePlayer(ip, new PlayerScoreMsg(player));
+                }
+                setTimeout(() => {
+                    buzzButtonContainer.style.display = "block";
+                    listPlayersBloc.style.display = "none";
+                }, 1000);
+
+            } else {
+                buzzButtonContainer.style.display = "none";
+                resultBloc.style.display = "none";
+                resultBlocFail.style.display = "none";
+                finalBloc.style.display = "block";
+                if (winners.length > 1) {
+                    verb.innerText = "Et les gagants sont ";
+                } else {
+                    verb.innerText = "Et le gagnant est ";
+                }
+
+                winner.innerText = winners.join(" & ");
+
+                setTimeout(() => {
+                    finalBloc.style.display = "none";
+                }, 2000);
+            }
+        },
+        question => {
+            resultBloc.style.display = "none";
+            resultBlocFail.style.display = "none";
+
+            qnumber = question.number;
+
+            questionBloc.style.display = "block";
+            questionLabel.innerText = question.label;
+            pointQuestion.innerText = question.points;
+            answer1.innerText = question.answers[0].label;
+            answer2.innerText = question.answers[1].label;
+            answer3.innerText = question.answers[2].label;
+
+            changeBtnColor(answer1, colorBlue);
+            changeBtnColor(answer2, colorBlue);
+            changeBtnColor(answer3, colorBlue);
+
+            answerClick(ip, answer1, 0, answer2, answer3);
+            answerClick(ip, answer2, 1, answer2, answer1);
+            answerClick(ip, answer3, 2, answer1, answer2);
+
+        },
+        canBuzz => {
+            if (canBuzz) {
+                enableBuzz(ip);
+            } else {
+                disableBuzz();
+            }
+        },
+        buzz => {
+
+            disableBuzz();
+            let pName = buzz.author;
+            let pView = document.getElementById(pName);
+            pView.style.backgroundColor = colorYellow;
+        },
+        answer => {
+            disableBuzz();
+            questionBloc.style.display = "none";
+
+            changeBtnColor(answer1, colorGrey);
+            changeBtnColor(answer2, colorGrey);
+            changeBtnColor(answer3, colorGrey);
+
+            let pName = answer.playerName;
+            let pView = document.getElementById(pName);
+            pView.style.backgroundColor = colorWhite;
+            if (answer.answer.good) {
+                resultBloc.style.display = "block";
+            } else {
+                resultBlocFail.style.display = "block";
+                goodAnswer.innerText = answer.answer.label;
+            }
+
+        },
+        (err) => {
+            alert(err);
+        }
+    );
+
+    eventSources.init();
+}
+
+function init(ip, playerName) {
 
     if (authService.isConnected(ip, null)) {
-        let player = storageService.getPlayer(ip, playerFromUrl());
+        let player = storageService.getPlayer(ip, playerName);
         if (!playerViewExist(player.name)) {
             createPlayerView(player);
         }
     } else {
-        let player = storageService.getPlayer(ip, playerFromUrl());
+        let player = storageService.getPlayer(ip, playerName);
         if (player !== null && playerViewExist(player.name)) {
             let pView = document.getElementById(player.name);
             playersBloc.removeChild(pView);
@@ -275,16 +295,16 @@ function changeBtnColor(btn, color) {
 }
 
 function enableBuzz(ip) {
-    let p = playerFromUrl();
+
     buzzButton.style.backgroundColor = colorRed;
     buzzButton.onclick = () => {
-        buzzer = ip + "-" + p;
+        buzzer = ip + "-" + player_name;
         disableBuzz();
         changeBtnColor(answer1, colorBlue);
         changeBtnColor(answer2, colorBlue);
         changeBtnColor(answer3, colorBlue);
 
-        let pName = storageService.getPlayer(ip, p).name;
+        let pName = storageService.getPlayer(ip, player_name).name;
         gameService.buzz(pName);
     }
 }
@@ -295,21 +315,15 @@ function disableBuzz() {
 }
 
 function answerClick(ip, btn, number, btn2, btn3) {
-    let p = playerFromUrl();
+
     btn.style.backgroundColor = colorGrey;
     btn.onclick = () => {
-        if (buzzer === (ip + "-" + p)) {
-            let pname = storageService.getPlayer(ip, p).name;
+        if (buzzer === (ip + "-" + player_name)) {
+            let pname = storageService.getPlayer(ip, player_name).name;
             gameService.answer(pname, qnumber, number);
             changeBtnColor(btn2, colorGrey);
             changeBtnColor(btn3, colorGrey);
             buzzer = null;
         }
     }
-}
-
-function playerFromUrl() {
-    let parts = window.location.href.split("player=");
-    if (parts.length > 1) return parts[1];
-    return null;
 }

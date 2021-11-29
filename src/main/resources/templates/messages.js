@@ -25,6 +25,14 @@ export class AnswerMsg {
     good;
 }
 
+export class CanBuzzMsg {
+    canBuzz;
+}
+
+export class ErrorMsg {
+    message;
+}
+
 export class Question {
     number;
     label;
@@ -34,7 +42,6 @@ export class Question {
 
 export class StateChange {
     type;
-    canBuzz;
     message;
     players;
     requiredNbPlayers;
@@ -48,6 +55,7 @@ export const StateChangeType = Object.freeze(
         "NEW_PLAYER_SCORE" : "NEW_PLAYER_SCORE",
         "NEW_QUESTION" : "NEW_QUESTION",
         "NEW_BUZZ" : "NEW_BUZZ",
-        "NEW_ANSWER" : "NEW_ANSWER"
+        "NEW_ANSWER" : "NEW_ANSWER",
+        "ERROR" : "ERROR"
     }
 )
